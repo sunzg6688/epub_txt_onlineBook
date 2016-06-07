@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" minWidth="955" minHeight="600" creationComplete="application1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			public var initpage:Number=0;
+			public var totalpage:Number=0;
+			public var nowpage:Number=0;
+			public var listpage:Number=0;
+			public var mypageflip:PageFlipClass2=new PageFlipClass2();
+			public var book_container:MovieClip=new MovieClip();
+			public var point_root:MovieClip=new MovieClip();
+			public var pos_root:Point=new Point(0,0);
+			
+			public var viewPages:Array=[];
+			
+			public var ViewPageWidth:int=500;
+			public var ViewPageHeight:int=580;
+			
+			protected function application1_creationCompleteHandler(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				preViewPage();
+				initPageFlip(2);
+//				var u:UIComponent=new UIComponent();
+//				var vp:ViewPage=getViewPage();
+//				u.addChild(vp);
+//				u.x=700;
+//				this.addElement(u);
+			}
+			
+			public function getViewPage():ViewPage{
+				var vp:ViewPage=new ViewPage();
+				vp.resetSize(this.ViewPageWidth,this.ViewPageHeight);
+				return vp;
+			}
+			
+			public function preViewPage():void{
+				while(viewPages.length<10){
+					//					if(this.isLastOpf)return;
+					//					this.nextBtn_clickHandler(null);
+//					this.cutOpfPage(this.currentPage);
+					this.viewPages.push(getViewPage());
+				}
+				totalpage=viewPages.length;
+			}
+			
+			public function initPageFlip(_index:int):void{
+				trace("_______index::::",_index);
+				//				var _viewIndex:int=this.currentViewPageIndex*2;
+				mypageflip.book_totalpage=totalpage;
+				//				mypageflip.book_page=_index*2;
+				mypageflip.book_page=2;
+				nowpage=2;
+				
+				mypageflip.book_root=book_container;
+				mypageflip.book_initpage=totalpage;
+				
+				mypageflip.book_TimerNum=20;
+				mypageflip.onPageEnd=onPageEnd;
+				
+				mypageflip.book_width=this.ViewPageWidth;
+				mypageflip.book_height=this.ViewPageHeight;
+				
+				point_root.addChild(book_container);
+				var ui:UIComponent=new UIComponent();
+				//				ui.x=20;
+				//				ui.y=50;
+				ui.addChild(point_root);
+				//				this.addElement(ui);
+				bookView.addElement(ui);
+				//				this.
+				mypageflip.bookArr=this.viewPages;
+				mypageflip.InitBook();
+				mypageflip.SetLoadMCNext();
+				mypageflip.SetPageMC(nowpage);
+			}
+			public function onPageEnd():void {
+				
+				nowpage=mypageflip.book_page;
+//				this.currentViewPageIndex=nowpage/2;
+				//				indx.text="";
+				//				total.text="/";
+				//				indx.text=nowpage.toString();
+				//				total.text="/"+pageArr.length.toString();
+				isCutOpf();
+				if(mypageflip.book_totalpage!=totalpage){
+					restPageFlip();
+				}
+			}
+			
+			public function isCutOpf():void{
+				while(viewPages.length-nowpage<10){
+					//					if(this.isLastOpf)return;
+					//					this.nextBtn_clickHandler(null);
+//					this.cutOpfPage(this.currentPage);
+					this.viewPages.push(getViewPage());
+				}
+				totalpage=viewPages.length;
+				trace("isCutOpf",nowpage,totalpage);
+			}
+			
+			public function restPageFlip():void{
+				mypageflip.book_totalpage=totalpage;
+				mypageflip.book_page=nowpage;
+				mypageflip.bookArr=this.viewPages;
+				mypageflip.SetLoadMCNext();
+				mypageflip.SetPageMC(nowpage);
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	<s:Group id="bookView" x="30" y="50"/>
+</s:Application>

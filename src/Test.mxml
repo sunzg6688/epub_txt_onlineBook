@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" creationComplete="application1_creationCompleteHandler(event)" minWidth="955" minHeight="600" xmlns:local="*">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			[Embed(source="assets/loading3.swf",symbol="loading")]
+			public static var loading:Class;
+			
+			public var _MC:MovieClip;
+			public var tim:Timer;
+			
+			protected function application1_creationCompleteHandler(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				_MC=new loading() as MovieClip;
+//				_MC["gotoAndStop"](2);
+//				_MC.addFrameScript()
+//				var _ui:UIComponent=new UIComponent();
+//				_ui.addChild(_MC);
+//				_ui.x=0;
+//				_ui.y=0;
+//				_ui.width=500;
+//				_ui.height=500;
+//				_ui.graphics.beginFill(0x999999,0.3);
+//				_ui.graphics.drawRect(0,0,500,500);
+//				_ui.graphics.endFill();
+//				g.addElement(_ui);
+//				tim=new Timer(200,100);
+//				tim.addEventListener(TimerEvent.TIMER,got);
+//				tim.start();
+				delList();
+			}
+			public var books:XML= <books>
+									<book publisher="a" name="Design Patterns" />
+									<book publisher="a" name="The Pragmatic Programmer" />
+									<book publisher="a" name="Test Driven Development" />
+									<book publisher="a" name="Refactoring to Patterns" />
+									<book publisher="O'Reilly Media" name="The Cathedral & the Bazaar" />
+									<book publisher="O'Reilly Media" name="Unit Test Frameworks" />
+								</books>;
+
+			public function delList():void{
+//				var xmlList:XMLList=books.book.(@publisher == "a");
+				var xmlList:XMLList=books.book;
+				showList(xmlList);
+				while(xmlList.length()!=0){
+					trace("xmlList",xmlList[0].@name);
+					delete xmlList[0];
+				}
+			}
+			
+			private function showList(list:XMLList):void {
+				var item:XML;
+				for each(item in list) {
+					trace("item: " + item.toXMLString());
+				}
+			}
+			
+ private function delNoVisibleNode(xmllist:XMLList):void  
+ {  
+	 //for each (var item:XML in xmllist)  
+	 for (var i:int=xmllist.length() - 1; i >= 0; i--)  
+	 {  
+		 var item:XML=xmllist[i];  
+		 if (item.@visible.toString() == "false" && item != null)  
+		 {  
+			 delete xmllist[item.childIndex()];  
+//			 menuByVisibleFlaseXML.appendChild(item);  
+			 //删除符合条件的子节点： delete xml.children()(@type ==  “car” && @color == “red”);   
+		 }  
+		 else if (item.@visible.toString() == "true")  
+		 {  
+			 if (item.hasComplexContent()) //有子节点  
+			 {  
+//				 arguments.callee(item.children());  
+				 //delNoVisibleNode(item.children());  
+			 }  
+		 }  
+	 }  
+ }  
+			
+			function got(event:TimerEvent):void{
+//				trace(tim.currentCount,	_MC.totalFrames);
+//				_MC["gotoAndStop"](tim.currentCount);
+//				loading.gotoAndStop(tim.currentCount);
+//				_MC.totalFrames;
+//				_MC.gotoAndStop(tim.currentCount);
+//				_MC.gotoNum(tim.currentCount);
+				
+//				_MC.loaderInfo.content.gotAndStop(tim.currentCount);
+//				_MC["gotoNum"](tim.currentCount);
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	<s:Button x="50" y="50" skinClass="skin.listBtnSkin"/>
+	<s:Group id="g" x="100" y="100">
+		 <local:TipGroup/>
+	</s:Group>
+</s:Application>

@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" creationComplete="application1_creationCompleteHandler(event)" minWidth="955" minHeight="600">
+	<s:layout>
+		<s:BasicLayout/>
+	</s:layout>
+	
+		<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		.pStyle{
+			color:#FF0000;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import flash.display.DisplayObject;
+			import flash.display.Sprite;
+			import flash.geom.Rectangle;
+			import flash.text.engine.TextLine;
+			
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			
+			import flashx.textLayout.container.ContainerController;
+			import flashx.textLayout.container.ScrollPolicy;
+			import flashx.textLayout.conversion.TextConverter;
+			import flashx.textLayout.elements.ParagraphElement;
+			import flashx.textLayout.elements.SpanElement;
+			import flashx.textLayout.elements.TextFlow;
+			import flashx.textLayout.factory.TextFlowTextLineFactory;
+			import flashx.textLayout.formats.TextLayoutFormat;
+			import flashx.textLayout.formats.WhiteSpaceCollapse;
+			
+			protected function application1_creationCompleteHandler(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+//				TextFlowTextLineFactory_example();
+//				createPages();
+				createsp();
+			}
+			
+			public function createsp():void{
+//				var sp:Sprite=new Sprite();
+//				sp.graphics.beginFill(0xff0000);
+//				sp.graphics.drawRect(0,0,300,300);
+//				sp.graphics.endFill();
+//				var c:ContainerController=new ContainerController(sp,100,100);
+//				var tf:TextFlow=new TextFlow();
+//				tf.flowComposer.addController(c);
+				var u:UIComponent=new UIComponent();
+//				u.addChild(sp);
+//				u.x=500;
+//				this.addElement(u);
+//				this.addChild(sp);
+//				tf.flowComposer.updateAllControllers();
+				u.graphics.beginFill(0xff0000);
+				u.graphics.drawRect(0,0,300,300);
+				u.graphics.endFill();
+//				u.x=500;
+				var c:ContainerController=new ContainerController(u,200,200);
+				
+				var uf:TextLayoutFormat=new TextLayoutFormat();
+//				uf.columnWidth = 120;
+//				uf.columnGap = 15;
+				c.format = uf;
+				// enable scrolling
+				c.verticalScrollPolicy = ScrollPolicy.AUTO;
+				var tf:TextFlow=new TextFlow();
+				tf.flowComposer.addController(c);
+				this.addElement(u);
+				tf.flowComposer.updateAllControllers();
+			}
+			
+			public function TextFlowTextLineFactory_example()
+			{
+				
+				
+				var factory:TextFlowTextLineFactory = new TextFlowTextLineFactory();
+				factory.compositionBounds = new Rectangle( 20, 20, 400, 400 );
+				
+				var flow:TextFlow = new TextFlow();
+				
+				var format:TextLayoutFormat = new TextLayoutFormat();
+//				format.fontFamily = "LilyUPC, Verdana, _sans";
+				format.fontSize = 16;
+				format.color = 0x000000;
+//				format.textAlpha = .5;
+				
+				var span:SpanElement = new SpanElement();
+				span.text = "The quick brown fox jumped over the lazy dog.";            
+				span.format = format;
+				
+				var span2:SpanElement=new SpanElement();
+				span2.text=" di  er  ha  gao  shi gogogogogo ";
+				span2.format=format;
+				
+				var para:ParagraphElement = new ParagraphElement();
+				para.addChild( span );
+				
+//				var para2:ParagraphElement = new ParagraphElement();
+				para.addChild(span2);
+				
+				para.styleName="pStyle";
+				flow.addChild( para );
+				
+				factory.createTextLines( useTextLines, flow );
+				
+//				factory.compositionBounds = new Rectangle( 99, 99, 200, 130 );
+//				format.color = 0x990000;
+//				format.textAlpha = 1;
+//				span.format = format;
+//				factory.createTextLines( useTextLines, flow );
+				
+//				graphics.beginFill(0x555555,.5);
+//				graphics.drawRect( 99, 99, 201, 131 );
+//				graphics.endFill();  20 11.6 316 15.05 11.6484375 3.3671875
+				//                   20 31.6 316 15.05 11.6484375 3.3671875 15.015625 316
+				
+			}
+			
+			private function useTextLines( _line:TextLine ):void
+			{
+//				trace(line);
+				trace(_line.x,_line.y,_line.width,_line.height,_line.ascent,_line.descent,_line.textHeight,_line.textWidth);
+				var uIC:UIComponent=new UIComponent();
+				uIC.addChild( _line );
+				this.addElement(uIC);
+			}
+			
+			public var FontSize:int=18;
+			
+			
+			public var xhtml1:XML = <html>
+										<head>
+											<title>Foo</title>
+										</head>
+										<body>
+											<div id="main">
+												<div class="page">
+													<h1>Alice Through the Looking Glass</h1>
+													<p>by Lewis Carrol</p>
+													<h2>Chapter I</h2>
+													<p>And it's <i><span class="foo"><b>the</b> best</span> kind</i> of day.</p>
+													<p>"I will spend it 'wisely' I think."</p>
+													<div>
+														<h2>Chapter II</h2>
+														<p>'I should' see the garden far better,' said Alice to herself, 'if I could get to the top of that hill.</p>
+													</div>
+												</div>
+											</div>
+										</body>
+									</html>;
+			public var iii:int;
+			public var ia:int=7;
+			public var ib:int=2;
+			public var sa:Array=new Array(0,1,2,3,4,5);
+			public function createPages():void{
+				sa.slice(0,2);
+				trace(sa);
+				sa.splice(0,2);
+				trace(sa);
+				iii=ia/2;
+				trace("7/2",iii);
+				var _uIc:UIComponent = null;
+				var _line:TextLine = null;
+				var _lineArr:Array = [];
+				
+				var flow:TextFlow = new TextFlow();
+				var format:TextLayoutFormat = new TextLayoutFormat();
+				format.fontSize = 16;
+				format.color = 0x000000;
+				var span:SpanElement = new SpanElement();
+				span.text = "ahe quick brown adfasdfadfsafdsdafaadfasdfasdwadsfsadfdsfcfsadfsaddhhsdfhsdfhsdfhsdffgadfafdasdfafasdfsadf1dsafasdfasdfasdfsadf3sadghhfddsahdshfdsgydsf4fgsdfgdsfgdsf5asdfsad6adsfasfsadfasdfsafdasfdasfd7jasfysauyuagkajk78fox jumped over the lazy dog.." +
+					"        bhe quick brown adfasdfasd adsfsadfdsf fsadfsad hhsdfhsdfhsdfhsdf  adfafdasdfafasdfsadf dsafasdfasdfasdfsadf sadghhfddsahdshfdsgydsf fgsdfgdsfgdsf asdfsad adsfasfsadfasdfsafdasfdasfd jasfysauyuagkajk  fox jumped over the lazy dog.." +
+					"        che quick brown adfasdfasd adsfsadfdsf fsadfsad hhsdfhsdfhsdfhsdf  adfafdasdfafasdfsadf dsafasdfasdfasdfsadf sadghhfddsahdshfdsgydsf fgsdfgdsfgdsf asdfsad adsfasfsadfasdfsafdasfdasfd jasfysauyuagkajk  fox jumped over the lazy dog.." +
+					"        dhe quick brown adfasdfasd adsfsadfdsf fsadfsad hhsdfhsdfhsdfhsdf  adfafdasdfafasdfsadf dsafasdfasdfasdfsadf sadghhfddsahdshfdsgydsf fgsdfgdsfgdsf asdfsad adsfasfsadfasdfsafdasfdasfd jasfysauyuagkajk  fox jumped over the lazy dog..";            
+				span.format = format;
+				var para:ParagraphElement = new ParagraphElement();
+				para.addChild( span );
+				flow.addChild( para );
+//				flow.setStyle("color","0xff0000");
+				flow.styleName="wt";
+				
+				
+				
+//				var _loc_6:TextFlow = TextConverter.importToFlow(xhtml1, TextConverter.TEXT_FIELD_HTML_FORMAT);
+//				_loc_6.whiteSpaceCollapse = WhiteSpaceCollapse.COLLAPSE;
+//				_loc_6.lineHeight = "150%";
+//				_loc_6.fontSize = FontSize;
+//				_loc_6.paragraphSpaceBefore = int(FontSize / 2);
+//				_loc_6.paragraphSpaceAfter = int(FontSize / 2);
+				
+				var _loc_7:TextFlowTextLineFactory = new TextFlowTextLineFactory();
+				_loc_7.compositionBounds = new Rectangle(0, 0, 200, 100000);
+				_loc_7.createTextLines(_lineArr.push, flow);
+				var __uIcArr:Array = [];
+				var _loc_10:int = 0;
+				var _lineIndex:int = 0;
+				while (_lineIndex < _lineArr.length)
+				{
+					
+					_line = _lineArr[_lineIndex] as TextLine;
+					if (_loc_10 + _line.y + _line.descent > 200)
+					{
+						_uIc = null;
+						_loc_10 = -(_line.y - _line.ascent);
+					}
+					if (_uIc == null)
+					{
+						_uIc = new UIComponent();
+//						_uIc.styleName="wt";
+						trace("_uicYYYY:::::",_loc_10);
+//						_uIc.y = _loc_10+600;
+//						_uIc.y = _loc_10+200*__uIcArr.length;
+//						_uIc.y = -200;
+						_uIc.x=__uIcArr.length*202+2;
+						_uIc.graphics.beginFill(0x000000,0.1);
+						_uIc.graphics.drawRect(0,0,200,200);
+						_uIc.graphics.endFill();
+						__uIcArr.push(_uIc);
+						this.addElement(_uIc);
+					}
+					_line.y=_line.y+_loc_10;
+					_uIc.addChild(_line);
+					_lineIndex++;
+				}
+//				return __uIcArr;
+			}
+			
+		]]>
+	</fx:Script>
+		<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		.wt{
+			color:#ff0000;
+		}
+	</fx:Style>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:TextArea visible="false" id="ta" width="400" height="400" >
+		
+	</s:TextArea>
+</s:Application>
