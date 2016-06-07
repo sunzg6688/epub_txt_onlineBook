@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" click="group1_clickHandler(event)" rollOver="marktipbtn1_rollOverHandler(event)" rollOut="marktipbtn1_rollOutHandler(event)" creationComplete="group1_creationCompleteHandler(event)" xmlns:local="*">
+	<fx:Script>
+		<![CDATA[
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+//			public var dateTime:Date=new Date();
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+//				trace(dateTime.toDateString());
+//				trace(dateTime.toLocaleDateString());
+//				trace(dateTime.toLocaleString());
+//				trace(dateTime.toLocaleTimeString());
+//				trace(dateTime.toString());
+//				trace(dateTime.toTimeString());
+//				trace(dateTime.toUTCString());
+//				var _min:int=dateTime.getMinutes();
+//				var _h:int=dateTime.getHours();
+//				var _d:int=dateTime.getDate();
+//				var _m:int=dateTime.getMonth()+1;
+//				var _y:int=dateTime.getFullYear();
+//				tipString=_y.toString()+"-"+_m.toString()+"-"+_d.toString()+"  "+_h.toString()+":"+_min.toString();
+//				setTip(tipString);
+			}
+			
+			public var vp:ViewPage;
+			public var vpIndex:int;
+			public var index:int;
+//			public var tipString:String="第 8 页 2014-3-16 15:34";
+			
+			public function setTip(_tipString:String):void{
+				tiplb.text=_tipString;
+			}
+			
+			protected function marktipbtn1_rollOverHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				
+				closeBtn.x=25;
+				closeBtn.y=35;
+				closeBtn.visible=true;
+				bgGroup.x=-60;
+				bgGroup.y=56;
+				bgGroup.visible=true;
+				rollOverGroup.visible=true;
+				rollOutGroup.visible=false;
+				FlexGlobals.topLevelApplication.showIndex(index);
+			}
+			
+			protected function marktipbtn1_rollOutHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				closeBtn.x=10;
+				closeBtn.y=10;
+				closeBtn.visible=false;
+				bgGroup.visible=false;
+				rollOverGroup.visible=false;
+				rollOutGroup.visible=true;
+			}
+			
+			protected function group1_clickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				if(event.target is CloseButton){
+					FlexGlobals.topLevelApplication.removeMarkPage(index);
+				}else{
+					FlexGlobals.topLevelApplication.gotoMarkPage(vpIndex);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Group id="rollOverGroup" visible="false">
+		<s:Rect id="fill2" left="0"  top="0"  width="40" height="50" topRightRadiusX="3" bottomRightRadiusX="3">
+			<s:fill>
+				<s:LinearGradient rotation="90">
+					<s:GradientEntry color="0x333333" 
+									 alpha="0.85"/>
+					<s:GradientEntry color="0x333333" 
+									 alpha="0.85"/>
+				</s:LinearGradient>
+			</s:fill>
+		</s:Rect>
+	</s:Group>
+	<s:Group id="rollOutGroup">
+		<s:Rect id="fill" left="0"  top="0"  width="30" height="50" topRightRadiusX="10" bottomRightRadiusX="10">
+			<s:fill>
+				<s:LinearGradient rotation="90">
+					<s:GradientEntry color="0x929496" 
+									 alpha="0.85" />
+					<s:GradientEntry color="0x929496" 
+									 alpha="0.85" />
+				</s:LinearGradient>
+			</s:fill>
+		</s:Rect>
+	</s:Group>
+	<local:CloseButton id="closeBtn" visible="false"/>
+	<s:Group id="bgGroup" visible="false">
+		<s:Rect radiusX="3" radiusY="3" left="-10" right="-10" top="-5" bottom="-5">
+			<s:fill>
+				<s:SolidColor color="0x555555"/>
+			</s:fill>
+		</s:Rect>
+		<s:Label id="tiplb" color="0xeeeeee"/>
+	</s:Group>
+</s:Group>

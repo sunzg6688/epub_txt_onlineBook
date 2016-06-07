@@ -1,0 +1,915 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" scriptTimeLimit="60" backgroundColor="0x777777" minWidth="955" minHeight="600"
+			   creationComplete="creationComplete()"
+			   >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import epub.NcxNavPoint;
+			import epub.OpfPage;
+			
+			import flash.system.System;
+			import flash.text.engine.ElementFormat;
+			import flash.text.engine.FontDescription;
+			import flash.text.engine.FontPosture;
+			import flash.text.engine.TextBlock;
+			import flash.text.engine.TextElement;
+			import flash.text.engine.TextLine;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.core.UIComponent;
+			
+			import spark.effects.Move;
+			
+			import EpubModel;
+			
+			import flashx.textLayout.elements.ParagraphElement;
+			import flashx.textLayout.elements.SpanElement;
+			import flashx.textLayout.elements.TextFlow;
+			import flashx.textLayout.factory.TextFlowTextLineFactory;
+			import flashx.textLayout.formats.TextLayoutFormat;
+			
+			import txt.TxtModel;
+			
+			public var _model:EpubModel;
+//			public var _bookUrl:String = "zx.epub";
+			public var _bookUrl:String ;
+			public var currentPageIndex:int=0;
+			public var currentPage:OpfPage;
+			
+			public var isLastOpf:Boolean=false;
+			public var isFirstOpf:Boolean=false;
+			
+			[Embed(source="assets/loading3.swf",symbol="loading")]
+			public static var loading:Class;
+			public var isTxt:Boolean=false;
+			
+			public function creationComplete():void 
+			{
+				_bookUrl=mx.core.FlexGlobals.topLevelApplication.parameters["_bookUrl"];
+			    if(_bookUrl.search(".txt")!=-1){
+					isTxt=true;
+					System.useCodePage = true;
+					var tm:TxtModel=new TxtModel();
+					tm.loadBook(_bookUrl);
+					
+				}else{
+					_model = new EpubModel();
+					_model.loadBook(_bookUrl);
+					viewPrevBtn.x=5;
+					viewPrevBtn.y=this.height/2-40;
+					viewNextBtn.right=5;
+					viewNextBtn.y=this.height/2-40;
+					topGroup.x=this.width/2-135;
+					bookView.width=this.width-180;
+					bookView.height=this.height;
+				}
+			}
+			
+			public function initTxt(arr:Array):void{
+				viewPrevBtn.x=5;
+				viewPrevBtn.y=this.height/2-40;
+				viewNextBtn.right=5;
+				viewNextBtn.y=this.height/2-40;
+				topGroup.x=this.width/2-135;
+				bookView.width=this.width-180;
+				bookView.height=this.height;
+				bookView.visible=true;
+				resetPageSize(false);
+				var date:Date=new Date();
+				while(arr.length>0){
+					if(viewPages.length>=1500)break;
+					creatFromTxt(arr.shift()as String);
+				}
+				while(bookView.numElements!=0){
+					bookView.removeAllElements();
+				}
+				viewPrevBtn.visible=true;
+				viewNextBtn.visible=true;
+				topGroup.visible=true;
+				totalpage=viewPages.length;
+				this.initPageFlip(1);
+			}
+			
+			
+			public var loadingMC:MovieClip=null;
+			public var tx:TextField=new TextField();
+			public function loadingBook(tip:String,pei:int):void{
+				if(loadingMC){
+					loadingMC.gotoAndStop(pei);
+					tx.text=tip;
+				}else{
+					loadingMC=new loading() as MovieClip;
+					var ui:UIComponent=new UIComponent();
+					ui.addChild(tx);
+					ui.addChild(loadingMC);
+					ui.x=bookView.width/2-125;
+					ui.y=bookView.height/2-20;
+					tx.y=20;
+					tx.x=40;
+					tx.width=200;
+					this.bookView.addElement(ui);
+				}
+			}
+			
+			public function upZipBook(tip:String,pei:int):void{
+				loadingMC.gotoAndStop(pei);
+				tx.text=tip;
+			}
+			
+			public function initPage():void{
+				while(bookView.numElements!=0){
+					bookView.removeAllElements();
+				}
+				viewPrevBtn.visible=true;
+				viewNextBtn.visible=true;
+				topGroup.visible=true;
+				
+				this.currentPage=_model.book.spine.pages[currentPageIndex];
+				ncxList.dataProvider=new ArrayCollection(_model.book.toc.contents);
+				readyNcx();
+				initView();
+				listBtn.addEventListener(MouseEvent.CLICK,showList);
+				ncxList.addEventListener(MouseEvent.ROLL_OUT,hideList)
+			}
+			
+			public function showList(event:MouseEvent):void{
+				ncxList.x=topGroup.x;
+				ncxList.y=50;
+				ncxList.visible=true;
+				mypageflip.listMouseDown=true;
+			}
+			
+			public function hideList(event:MouseEvent):void{
+				ncxList.visible=false;
+				mypageflip.listMouseDown=false;
+				topGroupOut();
+			}
+			
+			public function setFirstOrLast(_index:int):void{
+				if(_index<=0){
+					isFirstOpf=true;
+					isLastOpf=false;
+				}else{
+					isFirstOpf=false;
+				}
+				if(_index>=_model.book.spine.pages.length-1){
+					isLastOpf=true;
+					isFirstOpf=false;
+				}else{
+					isLastOpf=false;
+				}
+			}
+			
+			protected function prevOpfPage():void
+			{
+				// TODO Auto-generated method stub
+				currentPageIndex--;
+				isLastOpf=false;
+				if(currentPageIndex==0){
+					isFirstOpf=true;
+					currentPage=_model.book.spine.pages[currentPageIndex];
+					cutPrevOpfPage(this.currentPage);
+				}else if(currentPageIndex<0){
+					currentPageIndex=0;
+					isFirstOpf=true;
+				}else{
+					isFirstOpf=false;
+					currentPage=_model.book.spine.pages[currentPageIndex];
+					cutPrevOpfPage(this.currentPage);
+				}
+			}
+			
+			protected function nextOpfPage():void
+			{
+				// TODO Auto-generated method stub
+				isFirstOpf=false;
+				currentPageIndex++;
+				if(currentPageIndex==_model.book.spine.pages.length-1){
+					isLastOpf=true;
+					currentPage=_model.book.spine.pages[currentPageIndex];
+					this.cutNextOpfPage(this.currentPage);
+				}else if(currentPageIndex>_model.book.spine.pages.length-1){
+					currentPageIndex=_model.book.spine.pages.length-1;
+					isLastOpf=true;
+				}else{
+					isLastOpf=false;
+					currentPage=_model.book.spine.pages[currentPageIndex];
+					this.cutNextOpfPage(this.currentPage);
+				}
+				
+			}
+			
+			public function readyNcx():void{
+				ncxList.addEventListener(MouseEvent.CLICK,showSelectedPage);
+			}
+			
+			public var ListCurrentPage:OpfPage;
+			
+			public function showSelectedPage(event:MouseEvent):void{
+				var _p:NcxNavPoint=List(FlexGlobals.topLevelApplication.ncxList).selectedItem as NcxNavPoint;
+				var _op:OpfPage=_model.book.spine.getPageByPath(_p.path);
+				ListCurrentPage=_op;
+				for(var i:int=0;i<this.viewPages.length;i++){
+					if(viewPages[i].opfPage==ListCurrentPage){
+						var __index:int=viewPages[i].index;
+						this.mypageflip.PageGoto(__index);
+					}
+				}
+				
+				currentPageIndex=_model.book.spine.getPageNumberByPath(_p.path);
+			}
+			
+			public function gotoPage(_index:int):void{
+				mypageflip.PageGoto(_index);
+			}
+			
+			public function changListSelected():void{
+				var _p:NcxNavPoint;
+				for(var i:int=0;i<_model.book.toc.contents.length;i++){
+					_p=_model.book.toc.contents[i];
+					if(ListCurrentPage.path==_p.path){
+						ncxList.selectedIndex=i;
+					}
+				}
+			}
+			
+			
+			
+			public function initView():void{
+				resetPageSize(false);
+				this.cutNextOpfPage(currentPage);
+//				showViewPageW();
+				preViewPage();
+				this.initPageFlip(1);
+//				this.initPageFlip(currentViewPageIndex);
+			}
+			
+			public var viewPagePool:Vector.<ViewPage>=new Vector.<ViewPage>();
+			
+			public function initViewPagePool():void{
+				for(var i:int=0;i<1000;i++){
+					var vp:ViewPage=new ViewPage();
+				}
+			}
+			
+			public function getViewPage():ViewPage{
+				var vp:ViewPage;
+				if(viewPagePool.length>0){
+					vp=viewPagePool.shift();
+				}else{
+					vp=new ViewPage();
+				}
+				vp.resetSize(this.ViewPageWidth,this.ViewPageHeight);
+				return vp;
+			}
+			
+			public var viewPages:Array=new Array();
+			public var tempVP:ViewPage;
+			public var _line:TextLine;
+			public var _lineArr:Array = [];
+			
+			public var tempTF:TextFlow = new TextFlow();
+			
+			public var tempTFLF:TextFlowTextLineFactory = new TextFlowTextLineFactory();
+			
+			public function cutNextTxt(_s:String):void{
+				_lineArr=[];
+				var fontDescription:FontDescription = new FontDescription();
+				var textBlock:TextBlock = new TextBlock();
+				fontDescription.fontPosture=FontPosture.NORMAL;
+				var format:ElementFormat = new ElementFormat(fontDescription, 12);
+				var textElement:TextElement = new TextElement(_s, format);
+				textBlock.content = textElement;
+//				createLine(textBlock, yPos);
+			}
+			
+			public function creatFromTxt(_s:String):void{
+				_lineArr=[];
+				var factory:TextFlowTextLineFactory = new TextFlowTextLineFactory();
+				factory.compositionBounds = new Rectangle( 0, 0, this.ViewPageWidth-40, 100000);
+				
+				var flow:TextFlow = new TextFlow();
+				
+				var format:TextLayoutFormat = new TextLayoutFormat();
+				format.fontSize = 12;
+				var span:SpanElement = new SpanElement();
+				span.text = _s;          
+				span.format = format;
+				
+				var para:ParagraphElement = new ParagraphElement();
+				para.addChild( span );
+				flow.addChild( para );
+				
+				factory.createTextLines( _lineArr.push, flow );
+				
+				var _linePosY:int = 0;
+				var _lineIndex:int = 0;
+				var _opIndex:int=0;
+				var _isFirstPage:Boolean=true;
+				while(_lineIndex < _lineArr.length){
+					_line=_lineArr[_lineIndex] as TextLine;
+					if(_isFirstPage){
+						tempVP=getViewPage();
+//						tempVP.opfPage=op;
+						tempVP.opfPageIndex=_opIndex;
+						if(isWidth){
+							tempVP.index=_opIndex;
+						}else{
+							tempVP.index=this.viewPages.length+1;
+						}
+						this.viewPages.push(tempVP);
+						_opIndex++;
+						tempVP.addLine(_line);
+						_isFirstPage=false;
+					}else{
+						if(_line.height<tempVP.ly){
+							tempVP.addLine(_line);
+						}else{
+							tempVP.updateTF();
+							tempVP=getViewPage();
+//							tempVP.opfPage=op;
+							tempVP.opfPageIndex=_opIndex;
+							if(isWidth){
+								tempVP.index=_opIndex;
+							}else{
+								tempVP.index=this.viewPages.length+1;
+							}
+							viewPages.push(tempVP);
+							_opIndex++;
+							tempVP.addLine(_line);
+						}
+					}
+					_lineIndex++;
+				}
+				tempVP.updateTF();
+				tempVP=null;
+			}
+			
+			
+			public function cutNextOpfPage(op:OpfPage):void{
+				_lineArr=[];
+				tempTF=op.textFlow;
+				tempTFLF.compositionBounds = new Rectangle(0, 0, this.ViewPageWidth-40, 100000);
+				tempTFLF.createTextLines(_lineArr.push, tempTF);
+				var _linePosY:int = 0;
+				var _lineIndex:int = 0;
+				var _opIndex:int=0;
+				var _isFirstPage:Boolean=true;
+				while(_lineIndex < _lineArr.length){
+					_line=_lineArr[_lineIndex] as TextLine;
+//					_line = _lineArr.shift() as TextLine;
+					if(_isFirstPage){
+						tempVP=getViewPage();
+						tempVP.opfPage=op;
+						tempVP.opfPageIndex=_opIndex;
+						if(isWidth){
+							tempVP.index=_opIndex;
+						}else{
+//							tempVP.index=_opIndex/2;
+							tempVP.index=this.viewPages.length+1;
+						}
+						this.viewPages.push(tempVP);
+						_opIndex++;
+						tempVP.addLine(_line);
+						_isFirstPage=false;
+					}else{
+						if(_line.height<tempVP.ly){
+							tempVP.addLine(_line);
+						}else{
+							tempVP.updateTF();
+							tempVP=getViewPage();
+							tempVP.opfPage=op;
+							tempVP.opfPageIndex=_opIndex;
+							if(isWidth){
+								tempVP.index=_opIndex;
+							}else{
+//								tempVP.index=_opIndex/2;
+								tempVP.index=this.viewPages.length+1;
+							}
+							viewPages.push(tempVP);
+							_opIndex++;
+							tempVP.addLine(_line);
+						}
+					}
+					_lineIndex++;
+				}
+				tempVP.updateTF();
+				tempVP=null;
+				
+			}
+			
+			//往前翻
+			public var newViewPageArr:Array=[];
+			public var prevPos:int=0;
+			public function cutPrevOpfPage(op:OpfPage):void{
+				newViewPageArr=[];
+				_lineArr=[];
+				tempTF=op.textFlow;
+				tempTFLF.compositionBounds = new Rectangle(0, 0, this.ViewPageWidth-40, 100000);
+				tempTFLF.createTextLines(_lineArr.push, tempTF);
+				
+				var _linePosY:int = 0;
+				var _lineIndex:int = 0;
+				var _opIndex:int=0;
+				var _isFirstPage:Boolean=true;
+				while(_lineIndex < _lineArr.length){
+					_line = _lineArr[_lineIndex] as TextLine;
+					if(_isFirstPage){
+						tempVP=getViewPage();
+						tempVP.opfPage=op;
+						tempVP.opfPageIndex=_opIndex;
+						if(isWidth){
+							tempVP.index=_opIndex;
+						}else{
+							tempVP.index=_opIndex/2;
+						}
+						this.newViewPageArr.push(tempVP);
+						_opIndex++;
+						tempVP.addLine(_line);
+						_isFirstPage=false;
+					}else{
+						if(_line.height<tempVP.ly){
+							tempVP.addLine(_line);
+						}else{
+							tempVP.updateTF();
+							tempVP=getViewPage();
+							tempVP.opfPage=op;
+							tempVP.opfPageIndex=_opIndex;
+							if(isWidth){
+								tempVP.index=_opIndex;
+							}else{
+								tempVP.index=_opIndex/2;
+							}
+							newViewPageArr.push(tempVP);
+							_opIndex++;
+							tempVP.addLine(_line);
+						}
+					}
+					_lineIndex++;
+				}
+				tempVP.updateTF();
+				tempVP=null;
+				var _lg:int=this.newViewPageArr.length;
+				if(isWidth){
+					prevPos=_lg-1;
+				}else{
+//					prevPos=_lg/2-1;
+					prevPos=_lg-1;
+				}
+				for(var i:int=0;i<_lg;i++){
+					this.viewPages.unshift(this.newViewPageArr[_lg-i-1]);
+				}
+			}
+			
+			public var isWidth:Boolean=true;
+			public var ViewPageWidth:int;
+			public var ViewPageHeight:int;
+			public function resetPageSize(_isW:Boolean):void{
+				isWidth=_isW;
+				if(isWidth){
+					this.ViewPageWidth=this.width-180;
+					this.ViewPageHeight=this.height;
+				}else{
+					this.ViewPageWidth=this.width/2-90;
+					this.ViewPageHeight=this.height;
+				}
+				
+			}
+			
+			public var markWord:String;
+			
+			protected function sizeBtn_clickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				resetPageSize(!isWidth);
+				this.viewPages=[];
+				this.currentViewPageIndex=this.currentViewPage.index;
+				this.currentPage=this.currentViewPage.opfPage;
+				markWord=this.currentViewPage._markWord;
+				var opIndex:int=this._model.book.spine.getPageNumberByPage(currentPage);
+				this.currentPageIndex=opIndex;
+				setFirstOrLast(this.currentPageIndex);
+				cutNextOpfPage(this.currentPage);
+				if(bookView.numElements!=0){
+					bookView.removeAllElements();
+				}
+				if(!isWidth){
+					preViewPage();
+					this.initPageFlip(currentViewPageIndex);
+				}else{
+					showViewPageW(currentViewPageIndex);
+				}
+			}
+			
+			public var currentViewPageIndex:int=1;
+			public var currentViewPage:ViewPage;
+			
+			public function nextViewPage():void{
+				if(isWidth){
+					nextViewPageW();
+				}else{
+					nextViewPageL();
+				}
+			}
+			public function prevViewPage():void{
+				if(isWidth){
+					prevViewPageW();
+				}else{
+					prevViewPageL();
+				}
+			}
+			
+			public function nextViewPageW():void{
+				this.currentViewPageIndex++;
+				if(this.currentViewPageIndex>viewPages.length-1){
+					if(isLastOpf){
+						this.currentViewPageIndex--;
+						this.currentViewPage=this.viewPages[viewPages.length-1];
+						return;
+					}
+//					if(this.viewPages.length>1000){
+//						for(var i:int=0;i<500;i++){
+//							this.viewPagePool.push(this.viewPages.shift());
+//							this.currentViewPageIndex=this.currentViewPageIndex-500;
+//						}
+//					}
+					var op:OpfPage=this.currentViewPage.opfPage;
+					var opIndex:int=this._model.book.spine.getPageNumberByPage(op);
+					this.currentPageIndex=opIndex;
+					setFirstOrLast(currentPageIndex);
+					var _lg:int=this.viewPages.length;
+					while(this.viewPages.length-_lg<50){
+						if(isLastOpf){
+							showViewPageW(currentViewPageIndex);
+							return;
+						}else{
+							nextOpfPage();
+						}
+					}
+				}
+				showViewPageW(currentViewPageIndex);
+			}
+			
+			
+			public function prevViewPageW():void{
+				this.currentViewPageIndex--;
+				if(currentViewPageIndex<0){
+					if(isFirstOpf){
+						this.currentViewPageIndex++;
+						this.currentViewPage=this.viewPages[0];
+						return;
+					}
+//					if(this.viewPages.length>1000){
+//						for(var i:int=0;i<500;i++){
+//							this.viewPagePool.push(this.viewPages.pop());
+//						}
+//					}
+					var op:OpfPage=this.currentViewPage.opfPage;
+					var opfIndex:int=this._model.book.spine.getPageNumberByPage(op);
+					this.currentPageIndex=opfIndex;
+					setFirstOrLast(currentPageIndex);
+					var _lg:int=this.viewPages.length;
+					while(this.viewPages.length-_lg<50){
+						if(isFirstOpf){
+							this.prevPos=this.viewPages.length-_lg-1;
+							this.currentViewPageIndex=this.prevPos;
+							showViewPageW(this.currentViewPageIndex);
+							return;
+						}else{
+							prevOpfPage();
+						}
+					}
+					this.prevPos=this.viewPages.length-_lg-1;
+					this.currentViewPageIndex=this.prevPos;
+				}
+				showViewPageW(this.currentViewPageIndex);
+			}
+			
+			public function showViewPageW(_index:int=0):void{
+				if(bookView.numElements!=0){
+					bookView.removeAllElements();
+				}
+				if(this.isWidth){
+					var u:UIComponent=new UIComponent();
+					u.addChild(this.viewPages[_index]);
+					this.bookView.addElement(u);
+					this.currentViewPage=this.viewPages[_index];
+					this.currentViewPageIndex=_index;
+					this.currentViewPage.updateTF();
+				}
+			}
+			
+			/*翻页使用*/
+			public function nextViewPageL():void{
+				if(!isTxt)nextPreCutOpf();
+				if(mypageflip.book_totalpage!=totalpage){
+					resetPageFlip(nowpage,false);
+				}
+				this.nowpage=mypageflip.book_page+2;
+				if(nowpage<=this.totalpage){
+					mypageflip.PageGoto(nowpage);
+				}else{
+					nowpage=this.totalpage;
+				}
+				
+			}
+			
+			public function prevViewPageL():void{
+				if(nowpage-2<0){
+					if(!isTxt)prevPreCutOpf();
+					if(mypageflip.book_totalpage!=totalpage){
+						resetPageFlip(this.prevPos,true);
+					}
+				}
+				this.nowpage=mypageflip.book_page-2;
+				if(nowpage>=0){
+					mypageflip.PageGoto(nowpage);
+				}else{
+					nowpage=0;
+				}
+			}
+			
+			public var totalpage:Number=0;
+			public var nowpage:Number=0;
+			public var pos_root:Point=new Point(0,0);
+			public var mypageflip:PageFlipClass2=new PageFlipClass2();
+			public var book_container:MovieClip=new MovieClip();
+			public var point_root:MovieClip=new MovieClip();
+			
+			public function preViewPage():void{
+				while(viewPages.length<2000){
+					if(this.isLastOpf){
+						totalpage=viewPages.length;
+						return;
+					}
+					this.nextOpfPage();
+				}
+				totalpage=viewPages.length;
+			}
+			
+			public function initPageFlip(_index:int):void{
+				mypageflip.book_totalpage=totalpage;
+				if(_index<=0){
+					mypageflip.book_page=1;
+					nowpage=1;
+				}else{
+					//_index 是currentViewPageIndex 转换过来的  因为大页和小页并不是2倍关系 ,所以可能会超过边界
+					if(_index*2>totalpage){
+						var sIndex:int=totalpage/2;//取偶
+						mypageflip.book_page=sIndex*2;
+						nowpage=sIndex*2;
+					}else{
+						mypageflip.book_page=_index*2;
+						nowpage=_index*2;
+					}
+				}
+				
+				mypageflip.book_page=_index;
+				nowpage=_index;
+				
+				mypageflip.book_root=book_container;
+				mypageflip.book_initpage=totalpage;
+				
+				mypageflip.book_TimerNum=20;
+				mypageflip.onPageEnd=onPageEnd;
+				
+				mypageflip.book_width=this.ViewPageWidth;
+				mypageflip.book_height=this.ViewPageHeight;
+				
+				point_root.addChild(book_container);
+				var ui:UIComponent=new UIComponent();
+				ui.addChild(point_root);
+				bookView.addElement(ui);
+				mypageflip.resetBook();
+				mypageflip.bookArr=[];
+				mypageflip.bookArr=this.viewPages;
+				mypageflip.InitBook();
+				mypageflip.SetLoadMCNext();
+				mypageflip.SetPageMC(nowpage);
+//				this.onPageEnd();
+				resetViewPage(nowpage);
+			}
+			
+			
+			public function onPageEnd():void {
+				nowpage=mypageflip.book_page;
+				if(isTxt){
+					resetViewPage(nowpage);
+					return;
+				}
+				if(nowpage-2<0){
+					prevPreCutOpf();
+					if(mypageflip.book_totalpage<totalpage){
+						resetPageFlip(this.prevPos,true);
+						nowpage=this.prevPos;
+					}
+				}else{
+					nextPreCutOpf();
+					if(mypageflip.book_totalpage<totalpage){
+						resetPageFlip(nowpage,false);
+					}
+				}
+				resetViewPage(nowpage);
+			}
+			
+			public function prevPreCutOpf():void{
+				this.currentPage=this.viewPages[0].opfPage;
+				var opIndex:int=this._model.book.spine.getPageNumberByPage(currentPage);
+				this.currentPageIndex=opIndex;
+				setFirstOrLast(currentPageIndex);
+				var _lg:int=this.viewPages.length;
+				while(this.viewPages.length-_lg<50){
+					if(this.isFirstOpf){
+						this.prevPos=this.viewPages.length-_lg;
+						totalpage=viewPages.length;
+						return;
+					}
+					prevOpfPage();
+				}
+				this.prevPos=this.viewPages.length-_lg;
+				totalpage=viewPages.length;
+			}
+			
+			public function nextPreCutOpf():void{
+				var _lg:int=this.viewPages.length;
+				this.currentPage=this.viewPages[_lg-1].opfPage;
+				var opIndex:int=this._model.book.spine.getPageNumberByPage(currentPage);
+				this.currentPageIndex=opIndex;
+				setFirstOrLast(currentPageIndex);
+				while(viewPages.length-nowpage<500){
+					if(this.isLastOpf){
+						totalpage=viewPages.length;
+						return;
+					}
+					this.nextOpfPage();
+				}
+				totalpage=viewPages.length;
+			}
+			
+			public function resetPageFlip(_index:int,isPrev:Boolean):void{
+				mypageflip.book_totalpage=totalpage;
+				mypageflip.book_page=_index;
+				mypageflip.book_topage=_index;
+				mypageflip.bookArr=this.viewPages;
+				if(isPrev){
+					mypageflip.setLoadMcPrev();
+				}else{
+					mypageflip.SetLoadMCNext();
+				}
+				mypageflip.SetPageMC(_index);
+				nowpage=mypageflip.book_page;
+				resetViewPage(nowpage);
+			}
+			
+			public function resetViewPage(nowP:int):void{
+				var showIndex:int;
+				if(nowP-1>=0&&nowP-1<this.viewPages.length){
+					showIndex=nowP-1;
+					this.currentViewPage=this.viewPages[nowP-1];
+				}else if(nowP-1>=this.viewPages.length){
+					showIndex=viewPages.length-1;
+					this.currentViewPage=this.viewPages[viewPages.length-1];
+				}else if(nowP-1<0){
+					showIndex=0;
+					this.currentViewPage=this.viewPages[0];
+				}
+				ListCurrentPage=this.viewPages[showIndex].opfPage;
+				markIndex=showIndex+1;
+				if(!isTxt)changListSelected();
+				pageNumInput.text=nowP.toString();
+				pageNum.text=" / "+this.viewPages.length.toString();
+			}
+			public var markIndex:int;
+			public var markPages:Array=[];
+			public var dateTime:Date=new Date();
+			public function markPage():void{
+				if(markPages.length==5){
+					mx.controls.Alert.show("最多添加五个书签页");
+				}else{
+					if(isMarkPage(markIndex-1)){
+						mx.controls.Alert.show("本页已经存在书签中");
+					}else{
+						var tipGroup:TipGroup=new TipGroup();
+						var _min:int=dateTime.getMinutes();
+						var _h:int=dateTime.getHours();
+						var _d:int=dateTime.getDate();
+						var _m:int=dateTime.getMonth()+1;
+						var _y:int=dateTime.getFullYear();
+						var tipString:String="第"+markIndex.toString()+"页   "+_y.toString()+"-"+_m.toString()+"-"+_d.toString()+"  "+_h.toString()+":"+_min.toString();
+						tipGroup.setTip(tipString);
+						tipGroup.vp=this.viewPages[markIndex-1];
+						tipGroup.vpIndex=markIndex-1;
+						tipGroup.index=markPages.length;
+						tipGroup.x=this.width-90;
+						tipGroup.y=markPages.length*60;
+						markPages.push(tipGroup);
+						this.addElement(tipGroup);
+					}
+				}
+			}
+			
+			public function isMarkPage(_index:int):Boolean{
+				for(var i:int=0;i<markPages.length;i++){
+					if(markPages[i].vpIndex==_index)return true;
+				}
+				return false;
+			}
+			
+			public function gotoMarkPage(_vpIndex:int):void{
+				mypageflip.PageGoto(_vpIndex+1);
+			}
+			
+			public function removeMarkPage(_index:int):void{
+				this.removeElement(markPages[_index]);
+				this.markPages.splice(_index,1);
+				for(var i:int=0;i<markPages.length;i++){
+					markPages[i].index=i;
+					markPages[i].x=this.width-90;
+					markPages[i].y=i*60;
+				}
+			}
+			
+			public function showIndex(_index:int):void{
+				this.removeElement(markPages[_index]);
+				this.addElement(markPages[_index]);
+			}
+			
+			protected function markBtn_clickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				if(markPages.indexOf(currentPage)==-1){
+					markPages.push(currentPage);
+					var _markPage:MarkPage=new MarkPage();
+					_markPage.page=currentPage;
+					_markPage.y=markPages.length*40;
+					markGroup.addElement(_markPage);
+				}
+				
+			}
+			
+			
+			
+			public var smove:Move=new Move();
+			public function topGroupOver():void{
+				topGroup.x=this.width/2-135;
+				smove.target=topGroup;
+				smove.duration=500;
+				smove.yFrom=topGroup.y;
+				smove.yTo=0;
+				smove.play();
+			}
+			
+			public function topGroupOut():void{
+				smove.target=topGroup;
+				smove.duration=500;
+				smove.yFrom=topGroup.y;
+				smove.yTo=-50;
+				smove.play();
+			}
+			
+			protected function topGroup_rollOutHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				if(this.ncxList.visible==false){
+					topGroupOut();
+				}
+			}
+			
+			public function enterGo():void{
+				if(int(pageNumInput.text)>this.viewPages.length){
+					Alert.show("超出最大页");
+				}else{
+					gotoPage(int(pageNumInput.text));
+				}
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<!--<s:TextArea id="txtGroup" x="90" y="0" width="{this.width-180}" height="{this.height}"/>-->
+	<s:Group id="bookView" x="90" y="0"/>
+	<s:Group id="topGroup" rollOut="topGroup_rollOutHandler(event)" visible="false" width="266" height="50">
+		<s:Rect width="100%" height="100%">
+			<s:fill>
+				<s:SolidColor color="0x666666"/>
+			</s:fill>
+		</s:Rect>
+		<s:Button x="10" y="5" id="listBtn" skinClass="skin.listBtnSkin" />
+		<s:TextInput id="pageNumInput"  restrict="0-9" enter="enterGo()" contentBackgroundColor="0x555555" width="30" x="95" y="16"/>
+		<s:Label x="120" y="20" id="pageNum" fontSize="18"/>
+		<s:Button x="220" y="5" id="markBtn" skinClass="skin.markBtnSkin" click="markPage()"/>
+	</s:Group>
+	<s:Group id="rollGroup" rollOver="topGroupOver()" width="{this.width}" height="20"/>
+	<s:List contentBackgroundColor="0x333333" focusColor="0x333333" color="0xffffff" visible="false" id="ncxList" width="266" height="{this.height-80}" labelField="navLabel"/>
+	<s:Group visible="false" x="850" y="50" id="markGroup" width="200" height="600"/>
+	<s:Button visible="false" x="5" y="300" id="viewPrevBtn" skinClass="skin.prevBtnSkin" click="prevViewPage()"/>
+	<s:Button visible="false" x="500" id="viewNextBtn" skinClass="skin.nextBtnSkin" click="nextViewPage()"/>
+</s:Application>
